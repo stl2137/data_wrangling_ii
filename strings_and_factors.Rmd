@@ -4,7 +4,140 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+library(tidyverse)
+library(rvest)
+library(p8105.datasets)
+
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
+## String manipulation
+
+```{r}
+string_vec = c("my", "name", "is", "jeff")
+
+str_detect(string_vec, "jeff") # does "jeff" exist
+str_detect(string_vec, "je") #does not have to have full matching
+```
+
+```{r}
+str_replace(string_vec, "jeff", "Jeff")
+str_replace(string_vec, "m", "M")
+```
+
+```{r}
+string_vec = c(
+  "i think we all rule for participating",
+  "i think i have been caught",
+  "i think this will be quite fun actually",
+  "it will be fun, i think"
+  )
+
+str_detect(string_vec, "i think")
+
+## which ones start or end with "i think"/making placement for "i think" explicit
+str_detect(string_vec, "^i think")
+str_detect(string_vec, "i think$")
+```
+
+```{r}
+string_vec = c(
+  "Y'all remember Pres. HW Bush?",
+  "I saw a green bush",
+  "BBQ and Bushwalking at Molonglo Gorge",
+  "BUSH -- LIVE IN CONCERT!!"
+  )
+
+## How to detect the different bush phrases
+str_detect(string_vec,"[Bb]ush") ## square brackets allow to give a variety of matches
+
+```
+
+```{r}
+string_vec = c(
+  '7th inning stretch',
+  '1st half soon to begin. Texas won the toss.',
+  'she is 5 feet 4 inches tall',
+  '3AM - cant sleep :('
+  )
+
+str_detect(string_vec, "[0-9][a-zA-Z]")
+```
+
+```{r}
+string_vec = c(
+  'Its 7:11 in the evening',
+  'want to go to 7-11?',
+  'my flight is AA711',
+  'NetBios: scanning ip 203.167.114.66'
+  )
+
+## . matches any character
+str_detect(string_vec, "7.11")
+```
+
+```{r}
+string_vec = c(
+  'The CI is [2, 5]',
+  ':-]',
+  ':-[',
+  'I found the answer on pages [6-7]'
+  )
+
+## need to indicate [ is not a special character: use 2 backslashes (b/c \ is special character itself)
+str_detect(string_vec, pattern = "\\[")
+```
+
+## Use PULSE data
+
+```{r}
+pulse_data = 
+  haven::read_sas("./data_wrangling_i/data_import_examples/public_pulse_data.sas7bdat") %>%
+  janitor::clean_names() %>%
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit", 
+    names_prefix = "bdi_score_",
+    values_to = "bdi") %>%
+  select(id, visit, everything()) %>%
+  mutate(
+    visit = str_replace(visit, "bl", "00m"),
+    visit = fct_relevel(visit, str_c(c("00", "01", "06", "12"), "m"))) %>%
+  arrange(id, visit)
+
+print(pulse_data, n = 12)
+```
+
+```{r}
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+table_marj = 
+  read_html(nsduh_url) %>% 
+  html_nodes(css = "table") %>% 
+  .[[1]] %>%
+  html_table() %>%
+  slice(-1) %>%
+  as_tibble()
+```
+
+```{r}
+table_marj %>%
+  select(-contains("P Value")) %>% 
+  pivot_longer(
+    -State,
+    names_to = "age_year",
+    values_to = "percent"
+  ) %>% 
+  separate(age_year, into = c("age", "year"), sep = "\\(") %>% 
+  mutate(
+    year = str_replace(year, "\\)", ""),
+    percent = str_replace(percent, "[a-c]$", ""),
+    percent = as.numeric(percent)
+  ) %>% view()
+```
+
+```{r}
+
+```
 
